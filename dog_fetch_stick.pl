@@ -9,22 +9,9 @@ use XML::Parser;
 use Data::Dumper;
 use XML::SimpleObject;
 
-my $stopno = 1415; # exampleO Bahn 3127 O'Connell St
+my $this_year=2012;
 
-
-my $url = "http://data.sa.gov.au/storage/f/2013-05-09T03%3A38%3A59.921Z/acc-dog-registrations-2012.xml";
-
-# open is for files.  unless you have a file called
-# 'https://graph.facebook.com/?ids=http://www.filestube.com' in your
-# local filesystem, this won't work.
-#{
-#  local $/; #enable slurp
-#  open my $fh, "<", $trendsurl;
-#  $json = <$fh>;
-#}
-
-# 'get' is exported by LWP::Simple; install LWP from CPAN unless you have it.
-# You need it or something similar (HTTP::Tiny, maybe?) to get web pages.
+my $url = "http://data.sa.gov.au/storage/f/2013-05-09T03%3A38%3A59.921Z/acc-dog-registrations-".$this_year.".xml";
 
 my $xml_data = get( $url );
 
@@ -36,28 +23,20 @@ my $tree = $parser->parse ( $xml_data);
 
 my $xmlobj = new XML::SimpleObject ($parser->parse($xml_data));
 
-my %namecount;
+print "Year,Dog_name,Breed,Gender,Suburb,Status\n";
 
 foreach my $child ($xmlobj->child("Report")->child("table1")->child("Detail_Collection")->children) {
-    if (defined $child->attribute("AnimalName"))
+	my $breed=$child->attribute("Breed");
+    my $suburb=$child->attribute("Suburb");
+	$suburb =~ s/\s+$//; #remove trailing spaces
+    my $status=$child->attribute("Status");
+	my $gender=$child->attribute("Gender");
+	my $dog_name="";
+	if (defined $child->attribute("AnimalName"))
       { 
-        my $dog_name=$child->attribute("AnimalName"); 
-        $namecount{uc($dog_name)} += 1; 
+        $dog_name=$child->attribute("AnimalName"); 
       }
+	if ($status eq "NORMAL" || $status eq "NORMAL MULTIPLE") { print $this_year.",\"".$dog_name."\",\"".$breed."\",\"".$gender."\",\"".$suburb."\",\"".$status."\"\n"; }
   }
-my @popular = sort { $namecount{$a} <=> $namecount{$b} || $a <=> $b } keys %namecount;
-
-my $lastfreq=0;
-
-foreach my $name (@popular)
-  {
-    if ($lastfreq ne $namecount{$name})
-      { print "\n".$namecount{$name}; 
-        $lastfreq=$namecount{$name};
-        print " ".$name;
-      }
-    else
-      { print ",".$name; }
-}
 
 die "woof";
